@@ -26,12 +26,14 @@ import {GLTFLoader} from 'three/examples/jsm/loaders/GLTFLoader.js';
 const data = require('./results.json');
 // console.log(data);
 
+let curData = data[5];
+
 const apiOptions = {
   apiKey: 'AIzaSyDPmt5AOCjogsTiZUp8VIekeIZu0fVyOXc',
   version: "beta"
 };
 
-let lati = data[5][0].Latitude, lngi = data[5][0].Longitude;
+let lati = curData[0].Latitude, lngi = curData[0].Longitude;
  
 const mapOptions = {
   mapId: "fe058dbc4fb18811",
@@ -84,11 +86,32 @@ async function initMap() {
 
 
 async function initWebGLOverlayView(map) {  
-  let renderer, camera, loader;
+  let scene, renderer, camera, loader;
   const webGLOverlayView = new google.maps.WebGLOverlayView();
   let overlay = new ThreejsOverlayView;
 
-  data[5].forEach((e)=>{
+  curData.forEach((e)=>{
+    mapOptions.center = {
+      lat: e.Latitude,
+      lng: e.Longitude
+    }
+    console.log(mapOptions.center);
+    overlay = new ThreejsOverlayView({
+      ...mapOptions.center
+    });
+    overlay.setMap(map);
+  
+    scene = overlay.getScene();
+    let cube = new Mesh(
+      new SphereGeometry(3 + (e["Horizontal accuracy"] + e["Vertical accuracy"])/2, 20, 20),
+      new MeshBasicMaterial({color: 0x6a0572, transparent: true, opacity:0.3})
+    );
+  
+    let cubeLocation = {...mapOptions.center, altitude: e.Altitude};
+    overlay.latLngAltToVector3(cubeLocation, cube.position);
+  
+    scene.add(cube);
+
     mapOptions.center = {
       lat: e.Latitude,
       lng: e.Longitude
@@ -98,18 +121,41 @@ async function initWebGLOverlayView(map) {
     });
     overlay.setMap(map);
   
-    const scene = overlay.getScene();
-    const cube = new Mesh(
-      new SphereGeometry(5, 20, 20),
-      new MeshBasicMaterial({color: 0x6a0572})
+    // scene = overlay.getScene();
+    let sphere = new Mesh(
+      new SphereGeometry(3, 20, 20),
+      new MeshBasicMaterial({color: 0x6a0572, })
     );
   
-    const cubeLocation = {...mapOptions.center, altitude: 0};
-    overlay.latLngAltToVector3(cubeLocation, cube.position);
+    let sphereLocation = {...mapOptions.center, altitude: e.Altitude};
+    overlay.latLngAltToVector3(sphereLocation, sphere.position);
   
-    scene.add(cube);
+    scene.add(sphere);
   })
-  let scene = overlay.getScene();
+
+  // curData.forEach((e)=>{
+  //   mapOptions.center = {
+  //     lat: e.Latitude,
+  //     lng: e.Longitude
+  //   }
+  //   // console.log(mapOptions.center);
+  //   overlay = new ThreejsOverlayView({
+  //     ...mapOptions.center
+  //   });
+  //   overlay.setMap(map);
+  
+  //   const scene = overlay.getScene();
+  //   const cube = new Mesh(
+  //     new SphereGeometry(2, 20, 20),
+  //     new MeshBasicMaterial({color: 0x6a0572, })
+  //   );
+  
+  //   const cubeLocation = {...mapOptions.center, altitude: 0};
+  //   overlay.latLngAltToVector3(cubeLocation, cube.position);
+  
+  //   scene.add(cube);
+  // })
+  scene = overlay.getScene();
     
 
   webGLOverlayView.onAdd = () => {   
@@ -178,9 +224,9 @@ async function initWebGLOverlayView(map) {
   webGLOverlayView.onDraw = ({gl, transformer}) => {
     // update camera matrix to ensure the model is georeferenced correctly on the map
     const latLngAltitudeLiteral = {
-        lat: data[5][4].Latitude,
-        lng: data[5][4].Longitude,
-        altitude: 120
+        lat: curData[0].Latitude,
+        lng: curData[0].Longitude,
+        altitude: 50
     }
 
     const matrix = transformer.fromLatLngAltitude(latLngAltitudeLiteral);
