@@ -12,22 +12,65 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+
+import ThreejsOverlayView from '@ubilabs/threejs-overlay-view';
+import {SphereGeometry, Mesh, MeshBasicMaterial} from 'three';
+import {Line2} from 'three/examples/jsm/lines/Line2.js';
+import {LineMaterial} from 'three/examples/jsm/lines/LineMaterial.js';
+import {LineGeometry} from 'three/examples/jsm/lines/LineGeometry.js';
+//
+
 import { Loader } from '@googlemaps/js-api-loader';
 import * as THREE from 'three';
 import {GLTFLoader} from 'three/examples/jsm/loaders/GLTFLoader.js';
+const data = require('./results.json');
+// console.log(data);
 
 const apiOptions = {
-  apiKey: 'YOUR API KEY',
+  apiKey: 'AIzaSyDPmt5AOCjogsTiZUp8VIekeIZu0fVyOXc',
   version: "beta"
 };
 
+let lati = data[5][0].Latitude, lngi = data[5][0].Longitude;
+ 
 const mapOptions = {
-  "tilt": 0,
-  "heading": 0,
-  "zoom": 18,
-  "center": { lat: 35.6594945, lng: 139.6999859 },
-  "mapId": "YOUR MAP ID"    
-}
+  mapId: "fe058dbc4fb18811",
+  disableDefaultUI: true,
+  gestureHandling: 'greedy',
+
+  center: {lat: lati, lng: lngi},
+  zoom: 19,
+  heading: 324,
+  tilt: 65
+};
+
+
+// console.log(lati);
+// console.log(lngi);
+// const mapOptions = {
+//   "tilt": 0,
+//   "heading": 0,
+//   "zoom": 18,
+//   "center": { lat: lati, lng: lngi },
+//   "mapId": "fe058dbc4fb18811"    
+// }
+
+// // ...
+
+// let dataPoints = []
+// data[5].forEach((e)=>{
+//   let cur = {
+//     lat: e.Latitude,
+//     lng: e.Longitude,
+//     alt: e.Altitude
+//   }
+//   dataPoints.push(cur);
+// })
+
+// console.log(dataPoints);
+
+// const tmpVec3 = new THREE.Vector3();
+
 
 async function initMap() {    
   const mapDiv = document.getElementById("map");
@@ -37,31 +80,68 @@ async function initMap() {
 }
 
 
-function initWebGLOverlayView(map) {  
-  let scene, renderer, camera, loader;
+
+
+
+async function initWebGLOverlayView(map) {  
+  let renderer, camera, loader;
   const webGLOverlayView = new google.maps.WebGLOverlayView();
+  let overlay = new ThreejsOverlayView;
+
+  data[5].forEach((e)=>{
+    mapOptions.center = {
+      lat: e.Latitude,
+      lng: e.Longitude
+    }
+    overlay = new ThreejsOverlayView({
+      ...mapOptions.center
+    });
+    overlay.setMap(map);
   
+    const scene = overlay.getScene();
+    const cube = new Mesh(
+      new SphereGeometry(5, 20, 20),
+      new MeshBasicMaterial({color: 0x6a0572})
+    );
+  
+    const cubeLocation = {...mapOptions.center, altitude: 0};
+    overlay.latLngAltToVector3(cubeLocation, cube.position);
+  
+    scene.add(cube);
+  })
+  let scene = overlay.getScene();
+    
+
   webGLOverlayView.onAdd = () => {   
     // set up the scene
-    scene = new THREE.Scene();
+    // scene = new THREE.Scene();
     camera = new THREE.PerspectiveCamera();
     const ambientLight = new THREE.AmbientLight( 0xffffff, 0.75 ); // soft white light
     scene.add(ambientLight);
     const directionalLight = new THREE.DirectionalLight(0xffffff, 0.25);
     directionalLight.position.set(0.5, -1, 0.5);
     scene.add(directionalLight);
+    
+    console.log("here as well")
+    // const points = dataPoints.map(p=>overlay.latLngAltToVector3(p))
+    // // console.log(points);
+    // const curve = new THREE.CatmullRomCurve3(points, true, 'catmullrom', 0.2)
+    // curve.updateArcLengths();
+
+    // const trackLine = createTrackLine(curve);
+    // scene.add(trackLine);
   
     // load the model    
-    loader = new GLTFLoader();               
-    const source = "pin.gltf";
-    loader.load(
-      source,
-      gltf => {      
-        gltf.scene.scale.set(25,25,25);
-        gltf.scene.rotation.x = 180 * Math.PI/180; // rotations are in radians
-        scene.add(gltf.scene);           
-      }
-    );
+    // loader = new GLTFLoader();               
+    // const source = "pin.gltf";
+    // loader.load(
+    //   source,
+    //   gltf => {      
+    //     gltf.scene.scale.set(5,5,5);
+    //     gltf.scene.rotation.x = 180 * Math.PI/180; // rotations are in radians
+    //     scene.add(gltf.scene);           
+    //   }
+    // );
   }
   
   webGLOverlayView.onContextRestored = ({gl}) => {    
@@ -75,42 +155,43 @@ function initWebGLOverlayView(map) {
     renderer.autoClear = false;
 
     // wait to move the camera until the 3D model loads    
-    loader.manager.onLoad = () => {        
-      renderer.setAnimationLoop(() => {
-        map.moveCamera({
-          "tilt": mapOptions.tilt,
-          "heading": mapOptions.heading,
-          "zoom": mapOptions.zoom
-        });            
+    // loader.manager.onLoad = () => {        
+    //   renderer.setAnimationLoop(() => {
+    //     map.moveCamera({
+    //       "tilt": mapOptions.tilt,
+    //       "heading": mapOptions.heading,
+    //       "zoom": mapOptions.zoom
+    //     });            
         
-        // rotate the map 360 degrees 
-        if (mapOptions.tilt < 67.5) {
-          mapOptions.tilt += 0.5
-        } else if (mapOptions.heading <= 360) {
-          mapOptions.heading += 0.2;
-        } else {
-          renderer.setAnimationLoop(null)
-        }
-      });        
-    }
+    //     // rotate the map 360 degrees 
+    //     if (mapOptions.tilt < 67.5) {
+    //       mapOptions.tilt += 0.5
+    //     } else if (mapOptions.heading <= 360) {
+    //       mapOptions.heading += 0.2;
+    //     } else {
+    //       renderer.setAnimationLoop(null)
+    //     }
+    //   });        
+    // }
   }
 
   webGLOverlayView.onDraw = ({gl, transformer}) => {
     // update camera matrix to ensure the model is georeferenced correctly on the map
     const latLngAltitudeLiteral = {
-        lat: mapOptions.center.lat,
-        lng: mapOptions.center.lng,
+        lat: data[5][4].Latitude,
+        lng: data[5][4].Longitude,
         altitude: 120
     }
 
     const matrix = transformer.fromLatLngAltitude(latLngAltitudeLiteral);
     camera.projectionMatrix = new THREE.Matrix4().fromArray(matrix);
-    
+    scene = new THREE.Scene()
     webGLOverlayView.requestRedraw();      
     renderer.render(scene, camera);                  
 
     // always reset the GL state
     renderer.resetState();
+    
   }
   webGLOverlayView.setMap(map);
 }

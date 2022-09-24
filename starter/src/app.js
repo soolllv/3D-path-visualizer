@@ -15,14 +15,16 @@
 import { Loader } from '@googlemaps/js-api-loader';
 
 const apiOptions = {
-  "apiKey": "YOUR_API_KEY",
-  "version": "beta"
+  "apiKey": "AIzaSyDPmt5AOCjogsTiZUp8VIekeIZu0fVyOXc",
+  // "version": "beta"
 };
 
 const mapOptions = {
+  "tilt": 0,
+  "heading": 0,
   "zoom": 18,
   "center": { lat: 35.6594945, lng: 139.6999859 },
-  "mapId": "YOUR_MAP_ID"
+  "mapId": "fe058dbc4fb18811"
 }
 
 async function initMap() {    
@@ -35,6 +37,12 @@ async function initMap() {
 function initWebGLOverlayView (map) {
   let scene, renderer, camera, loader;
   // WebGLOverlayView code goes here
+  const webGLOverlayView = new google.maps.WebGLOverlayView();
+
+  webGLOverlayView.onAdd = () => {}
+  webGLOverlayView.onContextRestored = ({gl}) => {}
+  webGLOverlayView.onDraw = ({gl, coordinateTransformer}) => {}
+  webGLOverlayView.setMap(map);
 }
 
 (async () => {        
